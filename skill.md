@@ -133,7 +133,10 @@ Kur çekilemezse dur, tahmin yapma.
 2. Bash ile çalıştır:
    python "C:\Users\tugrademirors\.claude\skills\teklif mukayese\excel_generator.py" "KLASOR_YOLU/veri.py"
 3. Excel otomatik oluşur
+4. __pycache__ klasörünü sil — veri.py'yi SILME (proje verisi, yeni teklif gelince güncellenir)
 ```
+
+**Yeni teklif geldiğinde:** veri.py'yi yeniden yazmak yerine `suppliers` listesine yeni blok ekle → generator'ı tekrar çalıştır → Excel otomatik genişler.
 
 **CIKTI yolu yazarken dikkat:** Python string içinde Türkçe karakter varsa
 unicode escape kullan: `ü` → `\u00fc`, `ş` → `\u015f`, `ğ` → `\u011f`
