@@ -235,6 +235,40 @@ Dosya: Mukayese_TARIH.xlsx
 
 ---
 
+## ALTERNATİF TEKLİF (Aynı Firmadan İkinci Opsiyon)
+
+Kullanıcı "alternatif teklif", "ikinci opsiyon", "aynı firmadan farklı teklif" derse
+veya dosya adında "Alt", "Alternatif", "Alternative", "Option" geçiyorsa → bu akışı uygula.
+
+**Revizeden farkı:** Mevcut sütunu güncellemez — yanına YENİ sütun olarak ekler.
+
+### Kurallar
+
+| Alan | Kural |
+|------|-------|
+| `name` | `FirmaAdi-Alt` (örn. `ADT-Alt`) |
+| `full_name` | `Firma Adı (Alternatif / Quote#)` |
+| `color` | Ana firmayla görsel bağ için benzer ton — standart 5 renkten bağımsız seç (örn. ADT mavi `D9E1F2` → Alt için `BDD7EE`) |
+| Konum | `suppliers` listesinde orijinal firmanın hemen arkasına ekle |
+| NOTLAR | Fiyat farklılıkları, kapsam farkı, teslimat farkı zorunlu olarak belgelenir |
+
+### Renk önerileri (ana renge göre)
+| Ana renk | Alternatif tonu |
+|----------|-----------------|
+| `D9E1F2` (mavi) | `BDD7EE` |
+| `E2EFDA` (yeşil) | `C6E0B4` |
+| `FFF2CC` (sarı) | `FFE699` |
+| `FCE4D6` (turuncu) | `F4B183` |
+| `EAD1DC` (pembe) | `D9A6BA` |
+
+### NOTLAR'a zorunlu eklenecekler
+```
+"ℹ FirmaAdi-Alt – Aynı firmadan alternatif teklif; orijinal sütunun yanında gösterilmiştir."
+"⚠ FirmaAdi-Alt – Kalem N: $X (Alt) vs $Y (orijinal), fark %Z. [açıklama / doğrulama gerekli]"
+```
+
+---
+
 ## REVİZE TEKLİF AKIŞI
 
 Kullanıcı "güncelle", "revize geldi", "teklifi değişti" gibi bir ifade kullanırsa
