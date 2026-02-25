@@ -235,6 +235,49 @@ Dosya: Mukayese_TARIH.xlsx
 
 ---
 
+## REVİZE TEKLİF AKIŞI
+
+Kullanıcı "güncelle", "revize geldi", "teklifi değişti" gibi bir ifade kullanırsa
+veya klasörde adında "Rev", "Revize", "Revised", "v2", "güncel", "update" geçen
+yeni bir dosya varsa → bu akışı uygula.
+
+### Adımlar
+
+1. **Revize dosyayı oku** — pdf_reader.py ile veya Read tool ile
+2. **Tedarikçiyi tespit et** — dosya adı veya içerik → veri.py'deki `name`/`full_name` ile eşleştir
+3. **Eşleşme kararı:**
+
+| Durum | Eylem |
+|-------|-------|
+| veri.py'de aynı firma var | Mevcut bloğu güncelle — YENİ FIRMA EKLEME |
+| veri.py'de bu firma yok | Normal akış — yeni supplier olarak ekle |
+| Emin değilsen | Kullanıcıya sor: "Bu X firmasının revizyonu mu, yoksa yeni firma mı?" |
+
+4. **veri.py'de değişen alanları güncelle:**
+   - `prices`: sadece değişen kalemleri güncelle, değişmeyenlere dokunma
+   - `delivery`, `delivery_times`, `payment`, `incoterm`: değiştiyse güncelle
+   - `currency`: değiştiyse güncelle
+
+5. **NOTLAR'a revizyon notu ekle** (başa, diğer notların üstüne):
+   ```
+   "ℹ FİRMA – Teklif GG.AA.YYYY tarihinde revize edildi. "
+   "Değişen kalemler: Kalem N: ESKİ → YENİ EUR, Kalem M: ESKİ → YENİ EUR."
+   ```
+
+6. **AI_ANALIZ'i güncelle** — revizyon fiyat sıralamasını değiştiriyorsa yeniden yaz
+
+7. **Excel'i yeniden üret** → `__pycache__` sil, veri.py koru
+
+### Revizyon notu örneği
+```python
+NOTLAR = [
+    "ℹ Göver – Teklif 25.02.2026 tarihinde revize edildi. Kalem 3: 75 EUR → 65 EUR, Kalem 5: 122 EUR → 110 EUR.",
+    # ... önceki notlar
+]
+```
+
+---
+
 ## ÖZEL DURUMLAR
 
 **Para birimi dönüşümü:** `currency: "EUR"` yaz → script otomatik dönüştürür.
