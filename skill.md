@@ -293,6 +293,34 @@ doğrula, RFQ miktarını esas al, özette uyar.
 
 ---
 
+## SKILL OTOMATİK GÜNCELLEME KURALI
+
+Her execution sonunda şu soruyu sor:
+
+> "Bu mukayesede mevcut skill yapısıyla karşılanamayan, gerçekten yeni bir mimari durum var mıydı?"
+
+### Güncelleme GEREKTİREN durumlar (yeni mimari pattern)
+- Mevcut `suppliers` / `rfq_items` yapısıyla ifade edilemeyen yeni bir alan türü
+  (örn. miktar bazlı kademeli fiyat, koşullu indirim, çoklu lot)
+- pdf_reader.py'nin çözemediği yeni bir input formatı
+- excel_generator.py'ye yeni bir davranış eklenmesini gerektiren çıktı ihtiyacı
+- Daha önce hiç karşılaşılmamış ve tekrar karşılaşılabilecek bir anomali tipi
+
+### Güncelleme GEREKTİRMEYEN durumlar (normal varyasyon)
+- Farklı fiyat, para birimi, firma sayısı, kalem sayısı
+- Farklı teslim süreleri, ödeme koşulları, incoterm
+- delivery_times, NOTLAR, AI_ANALIZ içeriği — bunlar zaten esnektir
+- Firma adı, lokasyon, renk farklılıkları
+
+### Güncelleme Akışı
+1. Yeni pattern tespit et
+2. **Önce kullanıcıya sor:** "X durumu yeni bir pattern, skill.md'ye şunu eklemek istiyorum: [özet]. Onaylıyor musun?"
+3. Onay alınınca → skill.md ve gerekirse veri_sablonu.py güncelle
+4. `excel_generator.py`'e dokunmak gerekiyorsa → ayrıca onay al, mevcut formatı bozma
+5. GitHub'a push et
+
+---
+
 ## GÜVENLİK
 - Orijinal dosyalara dokunma
 - Kur çekilemezse dur, tahmin yapma
