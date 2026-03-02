@@ -1,6 +1,6 @@
 ---
 name: teklif-mukayese
-description: Birden fazla tedarikçi teklifini analiz edip renkli, formüllü, tek para birimli Excel mukayese tablosu oluşturur. PDF, Excel, Word formatlarını destekler. Günlük kur ile otomatik dönüşüm yapar.
+description: Birden fazla tedarikçi teklifini analiz edip renkli, formüllü, tek para birimli Excel mukayese tablosu oluşturur. PDF, Excel, Word ve Outlook MSG (.msg) formatlarını destekler. Mail gövdesine yazılmış teklifleri de okur. Günlük kur ile otomatik dönüşüm yapar.
 ---
 
 # /teklif-mukayese Skill
@@ -8,7 +8,7 @@ description: Birden fazla tedarikçi teklifini analiz edip renkli, formüllü, t
 Güney Yıldızı Petrol (GYP) için tedarikçi tekliflerini karşılaştırır.
 
 **Script dosyaları (skill klasöründe):**
-- `pdf_reader.py` — tüm PDF/Excel'leri okur, çıktısı ham metin
+- `pdf_reader.py` — PDF, Excel, Word (.docx) ve Outlook MSG (.msg) okur; çıktısı ham metin
 - `excel_generator.py` — Excel üretir; Claude bu dosyaya DOKUNMAZ
 - `veri_sablonu.py` — veri dosyası şablonu; Claude bunu referans alır
 
@@ -34,8 +34,9 @@ Güney Yıldızı Petrol (GYP) için tedarikçi tekliflerini karşılaştırır.
 ls "KLASOR_YOLU"
 ```
 
-- RFQ: adında "RFQ", "Talep", "List", "Inquiry" geçen dosya
-- Teklifler: geri kalan PDF/Excel/Word dosyaları
+- RFQ: adında "RFQ", "Talep", "List", "Inquiry" geçen dosya (.docx / .pdf / .xlsx)
+- Teklifler: PDF, Excel, Word (.docx) ve **Outlook MSG (.msg)** dosyaları
+- MSG dosyası: tedarikçi teklifi mail gövdesine yazılmışsa `.msg` olarak kaydedilmiş olabilir
 - Atla: görsel dosyalar (50KB altı), `desktop.ini`, `.DS_Store`
 
 ---
@@ -47,6 +48,21 @@ python3 "C:\Users\tugrademirors\.claude\skills\teklif mukayese\pdf_reader.py" "K
 ```
 
 Çıktıyı **ana konuşmada** oku ve analiz et.
+
+**Desteklenen formatlar (tek komutla okunur):**
+- `.pdf` → pdfplumber (metin + tablolar)
+- `.xlsx` / `.xls` → openpyxl
+- `.docx` → python-docx (paragraf + tablolar)
+- `.msg` → extract-msg (Kimden / Konu / Tarih / Gövde)
+
+**MSG özel not:** Mail gövdesi hem tedarikçi cevabını hem de altta alıntılanan orijinal
+RFQ'yu içerir. Tedarikçinin fiyatları üst kısımdadır; aşağıya doğru alıntı tekrar eder.
+
+**Kütüphane eksikse:** Script uyarı verip o formatı atlar, diğerlerine devam eder.
+```bash
+python -m pip install extract-msg   # MSG için
+pip install python-docx             # Word için
+```
 
 **Görsel PDF:** pdfplumber "Metin çıkarılamadı" uyarısı verirse →
 Read tool ile PDF'i direkt aç (Claude multimodal görür). Subagent AÇMA.
@@ -113,9 +129,10 @@ Script çıktısından şunları çıkar:
 Veri çıkardıktan sonra kontrol et:
 
 ```
-Tüm supplier["currency"] == "USD" ?
-  → EVET: KUR = {"USD": 1.0} yaz, kur çekme, devam et
-  → HAYIR: WebFetch → https://api.exchangerate-api.com/v4/latest/USD
+Tüm teklifler aynı para biriminde mi?
+  → EVET (hepsi USD):  KUR = {"USD": 1.0},  KUR_TARIHI = "Tum teklifler USD"
+  → EVET (hepsi EUR):  KUR = {"EUR": 1.0},  KUR_TARIHI = "Tum teklifler EUR"
+  → HAYIR (karışık): WebFetch → https://api.exchangerate-api.com/v4/latest/USD
 ```
 
 Kur çekilemezse dur, tahmin yapma.

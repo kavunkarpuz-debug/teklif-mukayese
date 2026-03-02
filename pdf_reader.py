@@ -1,11 +1,14 @@
 """
 pdf_reader.py — Teklif Mukayese Yardımcısı
 ==========================================
-Klasördeki tüm PDF ve Excel dosyalarını okur, ham metni ekrana basar.
-Claude bu çıktıyı ana konuşmada analiz eder.
+Klasördeki tüm PDF, Excel, Word (.docx) ve Outlook (.msg) dosyalarını okur,
+ham metni ekrana basar. Claude bu çıktıyı ana konuşmada analiz eder.
 
 Kullanım:
     python pdf_reader.py "C:/Klasor/Yolu"
+
+Gereksinimler (otomatik kontrol edilir, eksikse uyarı verir):
+    pip install pdfplumber openpyxl python-docx extract-msg
 """
 
 import sys
@@ -15,6 +18,7 @@ import glob
 # Windows terminal encoding sorunu: UTF-8 zorla
 if hasattr(sys.stdout, 'reconfigure'):
     sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+
 
 def main():
     if len(sys.argv) < 2:
@@ -49,7 +53,6 @@ def main():
                             metin_var = True
                             print(f"\n--- Sayfa {i+1} ---")
                             print(txt)
-                        # Tablo varsa ayrıca yazdır
                         tablolar = page.extract_tables()
                         if tablolar:
                             for j, tablo in enumerate(tablolar):
@@ -93,9 +96,70 @@ def main():
     else:
         print("(Excel dosyasi bulunamadi)")
 
+    # ── Word (.docx) dosyalarını oku ────────────────────────────────────────
+    docx_dosyalari = sorted(glob.glob(os.path.join(klasor, "*.docx")))
+    if docx_dosyalari:
+        docx_lib = None
+        try:
+            import docx as docx_lib
+        except ImportError:
+            print("UYARI: python-docx yuklu degil -> .docx dosyalari atlandi.")
+            print("       Yuklemek icin: pip install python-docx")
+
+        if docx_lib:
+            for f in docx_dosyalari:
+                print(f"\n{'='*70}")
+                print(f"WORD: {os.path.basename(f)}")
+                print('='*70)
+                try:
+                    doc = docx_lib.Document(f)
+                    for para in doc.paragraphs:
+                        if para.text.strip():
+                            print(para.text)
+                    for i, tablo in enumerate(doc.tables):
+                        print(f"\n[TABLO {i+1}]")
+                        for satir in tablo.rows:
+                            hucreler = [c.text.strip() for c in satir.cells]
+                            if any(hucreler):
+                                print('\t'.join(hucreler))
+                except Exception as e:
+                    print(f"HATA: {e}")
+    else:
+        print("(Word dosyasi bulunamadi)")
+
+    # ── Outlook MSG (.msg) dosyalarını oku ──────────────────────────────────
+    # Tedarikçiler tekliflerini mail gövdesine yazıp .msg olarak kaydedilmişse
+    # bu bölüm devreye girer. extract-msg kütüphanesi gereklidir.
+    msg_dosyalari = sorted(glob.glob(os.path.join(klasor, "*.msg")))
+    if msg_dosyalari:
+        emsg = None
+        try:
+            import extract_msg as emsg
+        except ImportError:
+            print("UYARI: extract-msg yuklu degil -> .msg dosyalari atlandi.")
+            print("       Yuklemek icin: python -m pip install extract-msg")
+
+        if emsg:
+            for f in msg_dosyalari:
+                print(f"\n{'='*70}")
+                print(f"OUTLOOK MSG: {os.path.basename(f)}")
+                print('='*70)
+                try:
+                    msg = emsg.openMsg(f)
+                    print(f"Kimden : {msg.sender}")
+                    print(f"Konu   : {msg.subject}")
+                    print(f"Tarih  : {msg.date}")
+                    print("--- MAIL GOVDESI ---")
+                    print(msg.body or "(govde bos)")
+                except Exception as e:
+                    print(f"HATA: {e}")
+    else:
+        print("(Outlook MSG dosyasi bulunamadi)")
+
     print(f"\n{'='*70}")
     print("OKUMA TAMAMLANDI — Yukardaki ciktiyi analiz edin.")
     print('='*70)
+
 
 if __name__ == "__main__":
     main()
