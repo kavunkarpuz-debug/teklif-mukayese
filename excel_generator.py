@@ -122,6 +122,17 @@ for i, sup in enumerate(suppliers):
 # ── Veri satirlari ────────────────────────────────────────────────────────────
 DS = 3  # data start row
 
+item_row = {item["item"]: DS + ri for ri, item in enumerate(rfq_items)}
+
+# Kit item mapping: {(sup_name, item_no) → kit_info}
+# Suppliers can define "kits" list: [{"items":[4,5,6], "label":"...", "sets":6,
+#   "unit_price":12527.9, "total":75167.4, "delivery":"120 Days"}, ...]
+kit_items_map = {}
+for _sup in suppliers:
+    for _kit in _sup.get("kits", []):
+        for _it in _kit["items"]:
+            kit_items_map[(_sup["name"], _it)] = _kit
+
 for ri, item in enumerate(rfq_items):
     r = DS + ri
     ws.row_dimensions[r].height = 18
@@ -150,7 +161,9 @@ for ri, item in enumerate(rfq_items):
 
         p_usd = (round(p * KUR.get(curr, 1.0), 4) if curr != "USD" else p) if p is not None else None
 
-        if p_usd is None:
+        if kit_items_map.get((sup["name"], n)) is not None:
+            pass  # kit item — birlesik hucre olarak merge adiminda yazilacak
+        elif p_usd is None:
             for j in range(3):
                 c = ws.cell(r, sc + j, "N/A")
                 c.fill = NA_F; c.font = NA_FN; c.alignment = al()
@@ -164,6 +177,40 @@ for ri, item in enumerate(rfq_items):
             unit_cell = ws.cell(r, sc)
             if   min_p is not None and p_usd == min_p: unit_cell.fill = GREEN_F
             elif max_p is not None and p_usd == max_p: unit_cell.fill = RED_F
+
+# ── Kit merge: birden fazla satiri kapsayan set/kit hucreleri ────────────────
+for i, sup in enumerate(suppliers):
+    sc  = cs(i)
+    sf  = fl(sup["color"])
+    for kit in sup.get("kits", []):
+        rows = sorted([item_row[it] for it in kit["items"] if it in item_row])
+        if not rows:
+            continue
+        r_s, r_e = rows[0], rows[-1]
+        ucl  = get_column_letter(sc)
+        tcl  = get_column_letter(sc + 1)
+        ltcl = get_column_letter(sc + 2)
+
+        if r_e > r_s:
+            ws.merge_cells(f"{ucl}{r_s}:{ucl}{r_e}")
+            ws.merge_cells(f"{tcl}{r_s}:{tcl}{r_e}")
+            ws.merge_cells(f"{ltcl}{r_s}:{ltcl}{r_e}")
+
+        # Birim fiyat hücresi: kit etiketi + set bilgisi
+        c = ws.cell(r_s, sc)
+        c.value = f"[KIT]\n{kit['label']}\n{kit['sets']} sets \u00d7 ${kit['unit_price']:,.2f}/set"
+        c.fill = sf; c.font = fn(italic=True, size=8); c.alignment = al(wrap=True)
+
+        # Toplam hücresi: kit toplam tutarı (numerik → SUM formülü otomatik toplar)
+        c = ws.cell(r_s, sc + 1)
+        c.value = kit["total"]
+        c.fill = sf; c.font = fn(size=9, bold=True); c.number_format = NUM
+        c.alignment = al(h="right")
+
+        # Teslim süresi
+        c = ws.cell(r_s, sc + 2)
+        c.value = kit.get("delivery", sup["delivery"])
+        c.fill = sf; c.font = fn(italic=True, size=8); c.alignment = al()
 
 # ── Grand Total ───────────────────────────────────────────────────────────────
 last = DS + len(rfq_items) - 1
@@ -179,10 +226,13 @@ grand = {}
 for i, sup in enumerate(suppliers):
     sc   = cs(i)
     curr = sup.get("currency", "USD")
-    grand[sup["name"]] = sum(
-        sup["prices"][item["item"]] * item["qty"] * KUR.get(curr, 1.0)
-        for item in rfq_items
-        if sup["prices"].get(item["item"]) is not None
+    grand[sup["name"]] = (
+        sum(
+            sup["prices"][item["item"]] * item["qty"] * KUR.get(curr, 1.0)
+            for item in rfq_items
+            if sup["prices"].get(item["item"]) is not None
+        ) +
+        sum(kit["total"] * KUR.get(curr, 1.0) for kit in sup.get("kits", []))
     )
     tc = get_column_letter(sc + 1)
     dr = f"{tc}{DS}:{tc}{last}"

@@ -92,6 +92,13 @@ Script çıktısından şunları çıkar:
     "payment":   "100% T/T Advance",
     "incoterm":  "EXW China",
     "location":  "China",
+    # Opsiyonel — birden fazla kalemi tek set/kit olarak fiyatlayan tedarikçiler icin:
+    # "kits": [
+    #     {"items": [4, 5, 6], "label": "FSA, Torque Bar & Spring Kit 1250RNT300",
+    #      "sets": 6, "unit_price": 12527.90, "total": 75167.40, "delivery": "120 Days"},
+    # ],
+    # Kit items: prices dict'te None olarak kalir; tabloda birlestirilmis hucre olarak gosterilir.
+    # Grand Total: kit["total"] otomatik eklenir (hem Excel SUM formulu hem Python hesabi).
 }
 ```
 
